@@ -1,1 +1,1711 @@
-"fix: logout + buscar updates via netlify function"
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premium Cards Intelligence — Goya Loyalty Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink: #0e0e0e;
+  --paper: #f2f5f7;
+  --cream: #e6ecf0;
+  --warm-mid: #6b9ab8;
+  --gold: #1B3A4B;
+  --gold-light: #2C5F7A;
+  --platinum: #8e9aaf;
+  --black-card: #0f2433;
+  --text: #0f2433;
+  --muted: #4a6375;
+  --border: rgba(27,58,75,0.18);
+  --surface: rgba(255,255,255,0.7);
+  --red-accent: #8b2635;
+  --green-accent: #1e6b5e;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--paper);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 300;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Grain texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* ─── HEADER ─── */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(15,36,51,0.96);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 10px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 72px;
+}
+
+.logo-area { display: flex; flex-direction: column; justify-content: center; }
+.logo-title {
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+.logo-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: rgba(255,255,255,0.30);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-top: 5px;
+}
+
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.last-updated {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 0.06em;
+}
+
+.refresh-btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  padding: 7px 16px;
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 3px;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: background 0.2s, transform 0.1s;
+}
+.refresh-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-1px); }
+.refresh-btn:active { transform: translateY(0); }
+.refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── HERO ─── */
+.hero {
+  padding: 60px 40px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0; right: -40px;
+  width: 420px; height: 280px;
+  background: radial-gradient(ellipse at 70% 30%, rgba(27,58,75,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--gold-light);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hero-eyebrow::before {
+  content: '';
+  display: block;
+  width: 32px;
+  height: 1px;
+  background: var(--gold-light);
+}
+
+.hero h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(38px, 5vw, 62px);
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin-bottom: 20px;
+  max-width: 700px;
+}
+
+.hero h1 em {
+  font-style: italic;
+  color: var(--gold-light);
+}
+
+.hero-desc {
+  font-size: 15px;
+  color: var(--muted);
+  max-width: 560px;
+  line-height: 1.75;
+  margin-bottom: 32px;
+}
+
+.disclaimer {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(27,58,75,0.06);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 640px;
+}
+.disclaimer-icon { color: var(--gold-light); font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+/* ─── FILTERS & CONTROLS ─── */
+.controls-bar {
+  max-width: 1200px;
+  margin: 0 auto 28px;
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+.filter-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
+.filter-pill {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.filter-pill:hover { border-color: var(--gold); color: var(--text); }
+.filter-pill.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #fff;
+  font-weight: 500;
+}
+
+.sort-select {
+  margin-left: auto;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23b8963e'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+/* ─── STAT STRIP ─── */
+.stat-strip {
+  max-width: 1200px;
+  margin: 0 auto 40px;
+  padding: 0 40px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.stat-cell {
+  background: var(--surface);
+  padding: 20px 24px;
+  backdrop-filter: blur(6px);
+}
+
+.stat-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px;
+  font-weight: 300;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ─── CARD GRID ─── */
+.cards-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px 80px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── INDIVIDUAL CARD ─── */
+.card-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(184,150,62,0.12);
+  border-color: rgba(184,150,62,0.4);
+}
+
+.card-item.expanded { border-color: var(--gold); }
+
+/* Card header strip */
+.card-tier-strip {
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+}
+.card-tier-strip.ultra { background: linear-gradient(90deg, #8b2635, #c94060, #8b2635); }
+.card-tier-strip.black { background: linear-gradient(90deg, #1a1a2e, #3a3a5c, #1a1a2e); }
+.card-tier-strip.infinite { background: linear-gradient(90deg, #2d5a27, #4a8a42, #2d5a27); }
+
+.card-body-wrap { padding: 22px 22px 0; }
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.card-name-block { flex: 1; }
+
+.card-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 3px;
+}
+
+.card-bank {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tier-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 2px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tier-badge.ultra { background: rgba(139,38,53,0.1); color: var(--red-accent); border: 1px solid rgba(139,38,53,0.25); }
+.tier-badge.black { background: rgba(26,26,46,0.1); color: #3a3a6c; border: 1px solid rgba(26,26,46,0.25); }
+.tier-badge.infinite { background: rgba(45,90,39,0.1); color: var(--green-accent); border: 1px solid rgba(45,90,39,0.25); }
+.tier-badge.legend { background: rgba(184,150,62,0.12); color: var(--gold); border: 1px solid var(--border); }
+
+/* Key metrics row */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.metric-box {
+  background: var(--cream);
+  border-radius: 3px;
+  padding: 10px 12px;
+}
+
+.metric-val {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.metric-key {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Quick benefits */
+.quick-benefits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 16px;
+}
+
+.benefit-tag {
+  font-size: 11px;
+  font-weight: 400;
+  padding: 3px 9px;
+  background: rgba(27,58,75,0.05);
+  border: 1px solid rgba(27,58,75,0.12);
+  border-radius: 2px;
+  color: var(--muted);
+}
+.benefit-tag.highlight {
+  background: rgba(27,58,75,0.1);
+  border-color: rgba(27,58,75,0.25);
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* Expand section */
+.card-expand-toggle {
+  border-top: 1px solid var(--border);
+  margin: 0 -22px;
+  padding: 10px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  cursor: pointer;
+  transition: color 0.15s;
+  width: calc(100% + 44px);
+  margin-left: -22px;
+}
+.card-expand-toggle:hover { color: var(--gold-light); }
+
+.chevron {
+  transition: transform 0.2s;
+  font-size: 12px;
+}
+.card-item.expanded .chevron { transform: rotate(180deg); }
+
+.card-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.25s;
+  opacity: 0;
+  background: var(--cream);
+}
+
+.card-item.expanded .card-detail {
+  max-height: 600px;
+  opacity: 1;
+}
+
+.detail-inner {
+  padding: 20px 22px 22px;
+}
+
+.detail-section { margin-bottom: 16px; }
+
+.detail-section-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--gold-light);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.detail-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.detail-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.detail-list li {
+  font-size: 12px;
+  color: var(--text);
+  padding-left: 12px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.detail-list li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: var(--warm-mid);
+  font-size: 10px;
+}
+
+.loyalty-insight {
+  background: rgba(27,58,75,0.06);
+  border-left: 2px solid var(--gold-light);
+  padding: 10px 14px;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+  font-style: italic;
+  font-family: 'Cormorant Garamond', serif;
+}
+
+.sources-row {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--muted);
+  padding: 8px 22px;
+  border-top: 1px solid var(--border);
+  letter-spacing: 0.05em;
+}
+
+/* ─── UPDATE PANEL ─── */
+.update-panel {
+  max-width: 1200px;
+  margin: 0 auto 40px;
+  padding: 0 40px;
+  position: relative;
+  z-index: 1;
+}
+
+.update-panel-inner {
+  background: var(--black-card);
+  border-radius: 4px;
+  padding: 28px 32px;
+  color: #e8f0f5;
+}
+
+.update-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: #5ba3c9;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.update-pulse {
+  width: 7px;
+  height: 7px;
+  background: #5ba3c9;
+  border-radius: 50%;
+  animation: blink 2s ease-in-out infinite;
+}
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.update-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 24px;
+  font-weight: 300;
+  color: #e8f0f5;
+  margin-bottom: 10px;
+}
+
+.update-desc {
+  font-size: 13px;
+  color: rgba(200,220,235,0.65);
+  line-height: 1.7;
+  margin-bottom: 20px;
+  max-width: 600px;
+}
+
+.update-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.update-fetch-btn {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 11px 24px;
+  background: #2C5F7A;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.update-fetch-btn:hover { opacity: 0.9; }
+.update-fetch-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.update-result {
+  margin-top: 20px;
+  display: none;
+}
+
+.update-result.visible { display: block; }
+
+.update-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.update-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(91,163,201,0.2);
+  border-radius: 3px;
+  padding: 14px 16px;
+}
+
+.update-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.update-cat-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.cat-mudanca { background: #5ba3c9; }
+.cat-lancamento { background: #7ec8e3; }
+.cat-alerta { background: #c94060; }
+.cat-insight { background: #4a9a65; }
+
+.update-card-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #d8eaf5;
+  line-height: 1.3;
+  flex: 1;
+}
+
+.update-card-body {
+  font-size: 12px;
+  color: rgba(200,220,235,0.65);
+  line-height: 1.6;
+}
+
+.update-card-cat {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 8px;
+  color: #5ba3c9;
+}
+
+/* ─── LOYALTY INSIGHTS SECTION ─── */
+.insights-section {
+  max-width: 1200px;
+  margin: 0 auto 60px;
+  padding: 0 40px;
+  position: relative;
+  z-index: 1;
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.section-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 30px;
+  font-weight: 300;
+  color: var(--text);
+}
+
+.section-subtitle {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.insight-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 22px;
+  backdrop-filter: blur(6px);
+}
+
+.insight-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 44px;
+  font-weight: 300;
+  color: var(--warm-mid);
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.insight-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.insight-body {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+/* spinner */
+.spin {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) {
+  .site-header, .hero, .controls-bar, .cards-grid, .update-panel, .insights-section { padding-left: 20px; padding-right: 20px; }
+  .stat-strip { grid-template-columns: repeat(2, 1fr); }
+  .hero { padding-top: 40px; }
+}
+</style>
+  <!-- Netlify Identity -->
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <script>
+    // Guard: redirect to login if not authenticated + inicializar Identity
+    document.addEventListener("DOMContentLoaded", function() {
+      if (window.netlifyIdentity) {
+        window.netlifyIdentity.on("init", function(user) {
+          if (!user) {
+            window.location.href = "/login.html";
+          }
+        });
+        window.netlifyIdentity.init();
+      }
+    });
+  </script>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="logo-area">
+    <div class="logo-title">
+      <img src="data:image/png;base64,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" alt="Goya Hono" style="height:52px;width:auto;display:block;" />
+    </div>
+    <div class="logo-sub">Loyalty Lab · Biosfera Copastur</div>
+  </div>
+  <div class="header-meta">
+    <div class="last-updated" id="last-updated">Atualizado: Abr 2026</div>
+    <button class="refresh-btn" onclick="doLogout()" style="margin-right:8px;background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12);">Sair</button>
+    <button class="refresh-btn" id="refresh-btn" onclick="fetchUpdates()">↻ Buscar updates</button>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">Inteligência Competitiva</div>
+  <h1><em>Goya Hono</em><br>Explore o extraordinário.</h1>
+  <p class="hero-desc">Análise completa dos cartões premium e superluxo no Brasil — pontuação por dólar, benefícios, anuidades e o que cada emissor está usando para disputar o cliente de altíssima renda. Base estratégica para o programa Goya Hono.</p>
+  <div class="disclaimer">
+    <span class="disclaimer-icon">◈</span>
+    <span>Dados compilados de fontes públicas verificadas (Melhores Cartões, Passageiro de Primeira, CNPL, sites oficiais dos emissores). Benefícios mudam sem aviso prévio — usar como referência estratégica, não operacional. Última verificação: Abril 2026.</span>
+  </div>
+</section>
+
+<!-- STAT STRIP -->
+<div class="stat-strip">
+  <div class="stat-cell">
+    <div class="stat-num">18</div>
+    <div class="stat-label">cartões mapeados</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-num">9,5×</div>
+    <div class="stat-label">maior pt/dólar (XP Legacy)</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-num">R$25k</div>
+    <div class="stat-label">anuidade máxima (Centurion)</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-num">200k</div>
+    <div class="stat-label">potenciais portadores Privilege</div>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls-bar">
+  <span class="filter-label">Categoria</span>
+  <button class="filter-pill active" onclick="filterCards('todos', this)">Todos</button>
+  <button class="filter-pill" onclick="filterCards('superluxo', this)">Superluxo</button>
+  <button class="filter-pill" onclick="filterCards('black', this)">Black / Infinite</button>
+  <button class="filter-pill" onclick="filterCards('digital', this)">Bancos Digitais</button>
+  <button class="filter-pill" onclick="filterCards('private', this)">Private / Investidores</button>
+  <select class="sort-select" onchange="sortCards(this.value)">
+    <option value="pts_desc">↓ Pontos/dólar</option>
+    <option value="pts_asc">↑ Pontos/dólar</option>
+    <option value="anuidade_asc">↑ Anuidade</option>
+    <option value="anuidade_desc">↓ Anuidade</option>
+  </select>
+</div>
+
+<!-- CARD GRID -->
+<div class="cards-grid" id="cards-grid">
+  <!-- Rendered by JS -->
+</div>
+
+<!-- DAILY UPDATES PANEL -->
+<div class="update-panel">
+  <div class="update-panel-inner">
+    <div class="update-eyebrow">
+      <div class="update-pulse"></div>
+      Monitoramento Diário
+    </div>
+    <div class="update-title">O que mudou hoje no mercado premium</div>
+    <div class="update-desc">Busca atualizações nas principais fontes especializadas em cartões de alta renda — mudanças de pontuação, novos emissores, lançamentos e alertas de benefícios que impactam a estratégia de loyalty do Goya Hono.</div>
+    <div class="update-form">
+      <button class="update-fetch-btn" id="update-btn" onclick="fetchDailyUpdate()">
+        <span id="update-btn-content">Buscar novidades de hoje</span>
+      </button>
+    </div>
+    <div class="update-result" id="update-result">
+      <div class="update-eyebrow" style="margin-top:0; margin-bottom: 8px;">
+        <span id="update-timestamp"></span>
+      </div>
+      <div class="update-cards" id="update-cards"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOYALTY INSIGHTS -->
+<section class="insights-section">
+  <div class="section-header">
+    <div class="section-title">Insights para o Goya Hono</div>
+    <div class="section-subtitle">O que aprender com a concorrência</div>
+  </div>
+  <div class="insights-grid">
+    <div class="insight-card">
+      <div class="insight-num">01</div>
+      <div class="insight-title">O superluxo não quer pontos — quer passagem direta</div>
+      <div class="insight-body">74% dos portadores de cartões premium usaram ao menos 1 benefício no último ano. O público de altíssima renda valoriza eficiência e discrição: atravessar o aeroporto sem fila, check-in a qualquer hora, menu assinado. O "dinheiro não pode comprar" desse segmento é tempo e atenção — não desconto.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-num">02</div>
+      <div class="insight-title">Concierge é o novo diferenciador estratégico</div>
+      <div class="insight-body">Visa lançou o Lifestyle Manager; Mastercard tem concierge com Guia Michelin e galeria Nara Roesler. O cliente de R$5M+ não quer um 0800 — quer uma pessoa que sabe seu nome, seu vinho favorito e consegue mesa no D.O.M. numa sexta à noite. Oportunidade direta para o Goya: oferecer travel concierge como diferencial do Hono Premium.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-num">03</div>
+      <div class="insight-title">Experiências únicas > cashback para esse público</div>
+      <div class="insight-body">59% dos clientes de alta renda preferem experiências a acúmulo financeiro. Cartões que oferecem eventos exclusivos (Rio Open, NFL), helicóptero gratuito, meet & greet no GRU e menus degustação exclusivos têm NPS significativamente maior. O Hono deveria ter uma categoria "impossível de comprar" — acesso a experiências que não estão à venda.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-num">04</div>
+      <div class="insight-title">IOF zero e spread zero são agora baseline</div>
+      <div class="insight-body">BRB DUX, BTG Ultrablue, XP Legacy e Caixa Ícone já oferecem spread zero ou IOF reduzido. Para o viajante corporativo que gasta R$50k+/mês no exterior, isso representa economia de R$2.500–3.500 por mês. O Goya Hono tem vantagem natural aqui: poder integrar benefícios de câmbio no pacote de viagens corporativas.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-num">05</div>
+      <div class="insight-title">Salas VIP evoluíram: discrição é o novo luxo</div>
+      <div class="insight-body">"O cliente de superluxo quer atravessar o aeroporto sem filas, não registrar onde esteve." (CEO Ambaar) O Privilege Lounge e o Taste of Priceless no GRU são convite. A Goya tem posição privilegiada: pode criar experiências de embarque e chegada que nenhum cartão oferece — desde o traslado até o check-in no hotel.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-num">06</div>
+      <div class="insight-title">O mercado está fragmentando: oportunidade de parceria</div>
+      <div class="insight-body">Unicred Infinite Privilege pontua 7pt/$ no exterior; BRB DUX chega a 7pt/$ também. Bancos menores estão superando os grandes em pontuação. Isso cria oportunidade para o Goya Hono firmar parcerias de dupla pontuação (earn) com emissores regionais competitivos — entregando mais valor ao viajante sem custo adicional ao programa.</div>
+    </div>
+  </div>
+</section>
+
+<script>
+// ─── DATA (compiled from verified public sources, April 2026) ───
+const CARDS_DATA = [
+  {
+    id: 1,
+    name: "XP Legacy",
+    bank: "XP Investimentos",
+    bandeira: "Visa Infinite Privilege",
+    tier: "superluxo",
+    category: "private",
+    pts_usd: 9.5,
+    pts_usd_label: "9,5 pt/$",
+    pts_note: "Turbo Benefícios em compras internacionais",
+    cashback: "5,5%",
+    cashback_note: "em compras internacionais c/ Turbo",
+    anuidade: 4200,
+    anuidade_label: "R$350/mês",
+    isencao: "3 meses grátis + possibilidades de desconto",
+    requisito: "Investidor XP",
+    salas_vip: "Dragon Pass ilimitado",
+    programas: ["Livelo"],
+    spread: "Verificar",
+    destaques: ["9,5 pt/$ internacional", "Concierge Forbes Travel Guide", "Visa Infinite Privilege", "Dragon Pass ilimitado"],
+    beneficios_completos: [
+      "Até 9,5 pontos XP por dólar ou 5,3% Investback em compras internacionais",
+      "Até 3,5 pontos por dólar ou 1,7% Investback em compras nacionais",
+      "Concierge reconhecido pela Forbes Travel Guide",
+      "Acesso ilimitado às salas VIP para o titular via Dragon Pass",
+      "Transferência de pontos para Livelo",
+      "Benefícios Visa Infinite Privilege: seguros amplos, proteção de compras",
+      "Cartões adicionais sem custo",
+      "Eventos exclusivos patrocinados pela XP (NFL, Rio Open, Live Run XP)"
+    ],
+    loyalty_insight: "O XP Legacy é a referência de maior pontuação do mercado brasileiro em compras internacionais. Para o público Goya Hono, a parceria com programas de fidelidade aéreos via Livelo é o principal vetor de valor.",
+    fontes: ["xpi.com.br/cartao-de-credito", "melhorescartoes.com.br"],
+    updated: "Abr 2026"
+  },
+  {
+    id: 2,
+    name: "Amex Centurion (Bradesco)",
+    bank: "Bradesco / American Express",
+    bandeira: "American Express Centurion",
+    tier: "superluxo",
+    category: "superluxo",
+    pts_usd: null,
+    pts_usd_label: "Membership Rewards",
+    pts_note: "Transferência 1:1 para programas internacionais",
+    cashback: null,
+    cashback_note: "Pontos transferíveis paridade 1:1",
+    anuidade: 25000,
+    anuidade_label: "R$25.000/ano",
+    isencao: "Por convite — sem isenção",
+    requisito: "Convite exclusivo",
+    salas_vip: "Centurion Lounge + Priority Pass ilimitado",
+    programas: ["Livelo exclusivo", "Programas internacionais 1:1"],
+    spread: "Verificar",
+    destaques: ["Só por convite", "Anuidade R$25k", "Pontos 1:1 internacionais", "Centurion Lounge"],
+    beneficios_completos: [
+      "Transferência de pontos para programas de fidelidade internacionais na paridade 1:1",
+      "Pontos de boas-vindas significativos via Livelo exclusivo",
+      "Acesso ilimitado ao Centurion Lounge e Priority Pass",
+      "Concierge dedicado 24/7 com expertise em viagens de luxo",
+      "Serviços de viagem exclusivos: emissão de passagens em primeira classe",
+      "Benefícios em hotéis Amex Fine Hotels & Resorts",
+      "Acesso a eventos exclusivos e experiências VIP",
+      "Personal shopper e serviços de lifestyle"
+    ],
+    loyalty_insight: "O Centurion representa o benchmark absoluto de exclusividade. Para o Goya Hono, o aprendizado é que anuidades altas são aceitas quando o benefício percebido supera o custo — e o cliente sente pertencimento a um clube restrito.",
+    fontes: ["melhorescartoes.com.br", "pantanalnoticiasms.com.br"],
+    updated: "Abr 2026"
+  },
+  {
+    id: 3,
+    name: "C6 Graphene World Legend",
+    bank: "C6 Bank",
+    bandeira: "Mastercard World Legend",
+    tier: "superluxo",
+    category: "digital",
+    pts_usd: 4.5,
+    pts_usd_label: "4,5 pt/$",
+    pts_note: "Todas as compras, pontos não expiram",
+    cashback: null,
+    cashback_note: "Pontos transferíveis para cias aéreas",
+    anuidade: 3960,
+    anuidade_label: "R$3.960/ano",
+    isencao: "R$5M+ investidos no C6 → isenção total",
+    requisito: "R$5M+ investidos",
+    salas_vip: "LoungeKey ilimitado + DragonPass + Taste of Priceless (GRU)",
+    programas: ["LATAM Pass", "Smiles", "Azul Fidelidade", "Livelo"],
+    spread: "Verificar",
+    destaques: ["Mastercard World Legend", "4,5 pt/$ sem limite", "Anytime check-in hotéis", "Taste of Priceless c/ Alex Atala"],
+    beneficios_completos: [
+      "4,5 pontos por dólar em todas as compras, pontos não expiram",
+      "The Mastercard Collection: plataforma de benefícios em gastronomia, viagens e entretenimento",
+      "Anytime check-in e check-out em hotéis da World Legend Hotels Collection",
+      "Acesso ao Taste of Priceless no GRU — menu exclusivo assinado pelo chef Alex Atala",
+      "Parceria Guia Michelin: reservas prioritárias e menus exclusivos",
+      "Consultoria especializada em arte via galeria Nara Roesler",
+      "LoungeKey ilimitado + DragonPass + salas exclusivas Mastercard Black",
+      "Concierge personalizado 24/7",
+      "Teresa Perez Collection: curadoria hoteleira de luxo"
+    ],
+    loyalty_insight: "O World Legend é a aposta mais sofisticada do mercado atual: experiências que dinheiro não compra (menu Alex Atala, check-in a qualquer hora) > pontuação. Exatamente o posicionamento do Goya Hono.",
+    fontes: ["melhorescartoes.com.br/mastercard-world-legend", "altarendablog.com.br"],
+    updated: "Abr 2026"
+  },
+  {
+    id: 4,
+    name: "Unicred Ímpar Infinite Privilege",
+    bank: "Unicred",
+    bandeira: "Visa Infinite Privilege",
+    tier: "superluxo",
+    category: "private",
+    pts_usd: 7,
+    pts_usd_label: "7 pt/$",
+    pts_note: "Compras internacionais; 5 pt/$ nacionais",
+    cashback: null,
+    cashback_note: null,
+    anuidade: 18000,
+    anuidade_label: "R$18.000/ano",
+    isencao: "Não informado publicamente",
+    requisito: "Convite / alto patrimônio",
+    salas_vip: "Visa Infinite Privilege Lounge (GRU) + salas parceiras",
+    programas: ["Verificar"],
+    spread: "Verificar",
+    destaques: ["7 pt/$ internacional", "5 pt/$ nacional", "Anuidade R$18k", "Lifestyle Manager Visa"],
+    beneficios_completos: [
+      "7 pontos por dólar em compras internacionais",
+      "5 pontos por dólar em compras nacionais",
+      "Acesso ao Visa Infinite Privilege Lounge no GRU (exclusivo, por reserva)",
+      "Lifestyle Manager dedicado — agenda, reservas, experiências personalizadas",
+      "Benefícios Visa Infinite Privilege completos: seguros internacionais amplos",
+      "Rede de hotéis parceiros com benefícios exclusivos",
+      "Atendimento personalizado disponível 24/7"
+    ],
+    loyalty_insight: "A Unicred, um banco cooperativo, conseguiu um produto de altíssima renda supercompetitivo em pontuação. Prova que o diferencial do superluxo não é o tamanho do banco — é a curadoria dos benefícios.",
+    fontes: ["cnpl.org.br", "altarendablog.com.br"],
+    updated: "Abr 2026"
+  },
+  {
+    id: 5,
+    name: "Itaú The One Private Black",
+    bank: "Itaú Personnalité",
+    bandeira: "Mastercard Black",
+    tier: "black",
+    category: "private",
+    pts_usd: 4,
+    pts_usd_label: "4 pt/$",
+    pts_note: "Todas as compras; 3 pt/$ compras gerais",
+    cashback: null,
+    cashback_note: null,
+    anuidade: 0,
+    anuidade_label: "Isento (R$5M+ investidos)",
+    isencao: "100% c/ R$5M+ investidos no Itaú Private; R$4k/ano sem isenção",
+    requisito: "R$5M+ Itaú Private",
+    salas_vip: "LoungeKey ilimitado (titular + adicionais + 20 convidados/ano) + Mastercard Black GRU",
+    programas: ["LATAM Pass", "Smiles", "Azul Fidelidade", "TAP Miles&Go", "Livelo"],
+    spread: "Verificar",
+    destaques: ["LoungeKey ilimitado + 20 convidados", "4 pt/$ Private", "5 programas aéreos", "Acesso Mastercard Black GRU"],
+    beneficios_completos: [
+      "4 pontos por dólar em todas as compras (segmento Private)",
+      "3 pontos por dólar no The One Black standard",
+      "LoungeKey ilimitado para titular, adicionais e até 20 convidados por ano",
+      "Salas exclusivas Mastercard Black em Guarulhos (3 salas)",
+      "Transferência para LATAM Pass, Smiles, Azul Fidelidade, TAP Miles&Go",
+      "Serviços Private exclusivos: assessoria financeira e patrimonial integrada",
+      "Seguros de viagem abrangentes internacionais",
+      "Concierge 24/7 dedicado ao segmento Private"
+    ],
+    loyalty_insight: "20 convidados por ano nas salas VIP é um benefício desenhado para o executivo que viaja com equipes. Para o Goya Hono, a lição é: o cliente corporativo de alta renda quer levar seu time — e o programa de loyalty que permitir isso tem vantagem.",
+    fontes: ["altarendablog.com.br/top-10-cartoes-black", "melhorescartoes.com.br"],
+    updated: "Abr 2026"
+  },
+  {
+    id: 6,
+    name: "BRB DUX",
+    bank: "BRB",
+    bandeira: "Mastercard Black",
+    tier: "black",
+    category: "private",
+    pts_usd: 7,
+    pts_usd_label: "5–7 pt/$",
+    pts_note: "5 pt/$ nacional; 7 pt/$ internacional",
+    cashback: null,
+    cashback_note: null,
+    anuidade: 0,
+    anuidade_label: "Isento (condições BRB)",
+    isencao: "Mediante gastos / investimentos BRB",
+    requisito: "Relacionamento BRB",
+    salas_vip: "LoungeKey + DragonPass + Mastercard Black GRU ilimitados",
+    programas: ["Verificar — múltiplos parceiros"],
+    spread: "Verificar",
+    destaques: ["7 pt/$ exterior", "Pontos sem validade", "3 redes de salas VIP", "Sem anuidade"],
+    beneficios_completos: [
+      "5 pontos por dólar em compras nacionais",
+      "7 pontos por dólar em compras internacionais",
+      "Pontos sem data de expiração",
+      "Acesso ilimitado LoungeKey + DragonPass + Mastercard Black Airport Lounge",
+      "Múltiplos parceiros de transferência de pontos",
+      "Benefícios Mastercard Black completos"
+    ],
+    loyalty_insight: "O BRB DUX é o cartão Black com maior pontuação no exterior entre os emissores tradicionais. Para o programa Goya: 7 pt/$ internacional é o que o viajante corporativo que gasta no exterior precisa ver como benchmark de earn rate.",
+    fontes: ["diariodefinancas.com/melhores-cartoes-2026", "altarendablog.com.br"],
+    updated: "Abr 2026"
+  },
+  {
+    id: 7,
+    name: "Caixa Ícone Visa Infinite",
+    bank: "Caixa Econômica Federal",
+    bandeira: "Visa Infinite",
+    tier: "black",
+    category: "black",
+    pts_usd: 6,
+    pts_usd_label: "6 pt/$",
+    pts_note: "Compras internacionais; progressivo por faixa de gasto",
+    cashback: null,
+    cashback_note: null,
+    anuidade: 1650,
+    anuidade_label: "R$1.650/ano",
+    isencao: "100% com fatura R$25k+/mês",
+    requisito: "Relacionamento Caixa",
+    salas_vip: "Verificar",
+    programas: ["LATAM Pass", "Azul Fidelidade", "Livelo"],
+    spread: "IOF zerado",
+    destaques: ["6 pt/$ exterior", "IOF zerado", "Isenção c/ R$25k/mês", "Progressivo por fatura"],
+    beneficios_completos: [
+      "Até 6 pontos por dólar em compras internacionais",
+      "4–5 pontos em faixas de gasto intermediárias",
+      "IOF zerado em compras internacionais — diferencial importante",
+      "Isenção de anuidade com fatura acima de R$25.000/mês",
+      "Transferência para LATAM Pass, Azul Fidelidade, Livelo",
+      "Benefícios Visa Infinite completos"
+    ],
+    loyalty_insight: "IOF zerado é uma economia real de até 3,38% por dólar gasto. Para o viajante corporativo, isso pode superar o valor da anuidade do cartão em poucos meses.",
+    fontes: ["diariodefinancas.com/melhores-cartoes-2026"],
+    updated: "Abr 2026"
+  },
+  {
+    id: 8,
+    name: "BTG Pactual Ultrablue",
+    bank: "BTG Pactual",
+    bandeira: "Visa Infinite",
+    tier: "black",
+    category: "private",
+    pts_usd: 3.5,
+    pts_usd_label: "3–3,5 pt/$",
+    pts_note: "3 pt/$ nacional; 3,5 pt/$ internacional",
+    cashback: "1,7%",
+    cashback_note: "1,5% nacional / 1,7% internacional",
+    anuidade: 4800,
+    anuidade_label: "R$4.800/ano",
+    isencao: "R$400k+ investidos ou R$40k+/mês de fatura",
+    requisito: "R$1M+ investidos no BTG",
+    salas_vip: "LoungeKey ilimitado + 12 convidados/ano",
+    programas: ["Livelo", "Esfera", "Azul Fidelidade", "Smiles", "LATAM Pass"],
+    spread: "Spread zero em compras internacionais",
+    destaques: ["Spread zero câmbio", "LoungeKey ilimitado + 12 convidados", "Cashback 1,7%", "5 programas de pontos"],
+    beneficios_completos: [
+      "3,5 pontos por dólar em compras internacionais (ou cashback 1,7%)",
+      "3 pontos por dólar em compras nacionais (ou cashback 1,5%)",
+      "Spread zero no câmbio em compras internacionais",
+      "LoungeKey ilimitado para titular + 12 convidados por ano",
+      "Pontos sem data de expiração",
+      "Transferência para Livelo, Esfera, Azul Fidelidade, Smiles, LATAM Pass",
+      "Limite de crédito ilimitado/flexível",
+      "Parceria exclusiva BTG TAP Black para quem voa TAP"
+    ],
+    loyalty_insight: "O Ultrablue entende que o cliente Private do BTG precisa de flexibilidade: escolher entre pontos e cashback é uma forma de respeitar perfis diferentes. Goya Hono deveria oferecer resgate flexível (milhas, cashback, upgrade de cabine, experiência).",
+    fontes: ["melhorescartoes.com.br/cartao-btg-ultrablue", "cartoeseviagens.com.br"],
+    updated: "Abr 2026"
+  },
+  {
+    id: 9,
+    name: "Nubank Ultravioleta",
+    bank: "Nubank",
+    bandeira: "Mastercard Black",
+    tier: "black",
+    category: "digital",
+    pts_usd: 2.2,
+    pts_usd_label: "2,2 pt/$",
+    pts_note: "9 pt/$ via NuViagens | Modo LATAM Pass: 2,42",
+    cashback: "1,25%",
+    cashback_note: "5% em passagens via NuViagens",
+    anuidade: 1068,
+    anuidade_label: "R$1.068/ano",
+    isencao: "Gratuito com R$8k/mês de fatura ou R$50k investidos",
+    requisito: "Alta renda Nubank",
+    salas_vip: "Sala VIP Nubank GRU (ilimitado) + 4 acessos Priority Pass/ano",
+    programas: ["LATAM Pass", "Smiles", "Azul Fidelidade"],
+    spread: "IOF zerado",
+    destaques: ["9 pt/$ NuViagens", "IOF zero", "eSIM 10GB/ano gratuito", "Sala VIP própria GRU"],
+    beneficios_completos: [
+      "2,2 pontos por dólar em todas as compras (ou 1,25% cashback)",
+      "9 pontos por dólar em passagens e hotéis via NuViagens",
+      "Modo LATAM Pass: 2,42 pt/$ com transferência automática semanal + 10% bônus",
+      "IOF zerado em compras internacionais",
+      "eSIM de viagem: 10GB gratuitos por ano em 150+ países",
+      "Acesso ilimitado à Sala VIP Nubank em Guarulhos",
+      "4 acessos gratuitos/ano ao Priority Pass (1.700+ lounges em 145 países)",
+      "Conta global com spread zero (parceria Wise) + 40 moedas",
+      "Seguro médico em viagens internacionais + proteção de bagagem",
+      "Concierge de experiências disponível"
+    ],
+    loyalty_insight: "O Nubank transformou o Ultravioleta em plataforma de viagens completa: eSIM, conta multi-moeda, NuViagens. Para o Goya: o cliente digital espera experiência integrada de A a Z — não apenas pontos. A Goya pode ser esse hub.",
+    fontes: ["nubank.com.br/ultravioleta", "melhorescartoes.com.br/nubank-ultravioleta", "finsidersbrasil.com.br"],
+    updated: "Ago 2025"
+  },
+  {
+    id: 10,
+    name: "XP Infinite",
+    bank: "XP Investimentos",
+    bandeira: "Visa Infinite",
+    tier: "black",
+    category: "private",
+    pts_usd: 3.5,
+    pts_usd_label: "2,2–3,5 pt/$",
+    pts_note: "Até 3,5 pt/$ Turbo; 2,2 pt/$ padrão",
+    cashback: "1%",
+    cashback_note: "Investback na carteira XP",
+    anuidade: 0,
+    anuidade_label: "Isento (investidores XP)",
+    isencao: "Patrimônio entre R$5k e R$49.999 na XP",
+    requisito: "Investidor XP",
+    salas_vip: "Visa Airport Companion: 2 acessos/ano",
+    programas: ["Livelo (→ transferível para cias aéreas)"],
+    spread: "Verificar",
+    destaques: ["Investback na carteira", "Isento p/ investidores", "Pontos ou Investback", "Visa Infinite"],
+    beneficios_completos: [
+      "Até 3,5 pontos por dólar com Turbo Benefícios em compras internacionais",
+      "2,2 pontos por dólar padrão em compras nacionais",
+      "Opção de Investback: % do gasto vai direto para carteira XP",
+      "Transferência de pontos via Livelo para programas aéreos",
+      "2 acessos gratuitos por ano ao Visa Airport Companion",
+      "Benefícios Visa Infinite: seguros e proteções internacionais"
+    ],
+    loyalty_insight: "O Investback é uma inovação relevante: retorno financeiro direto no patrimônio. Para perfis que preferem investir a voar, é um argumento poderoso. Goya Hono poderia explorar 'Hono Cash': retorno aplicado em próxima viagem.",
+    fontes: ["xpi.com.br/cartao-de-credito", "passageirodeprimeira.com"],
+    updated: "Abr 2026"
+  },
+  {
+    id: 11,
+    name: "Bradesco Aeternum",
+    bank: "Bradesco",
+    bandeira: "Visa Infinite",
+    tier: "black",
+    category: "black",
+    pts_usd: 4,
+    pts_usd_label: "4 pt/$",
+    pts_note: "Todas as compras",
+    cashback: null,
+    cashback_note: null,
+    anuidade: 0,
+    anuidade_label: "Verificar (alto patrimônio)",
+    isencao: "Segmento prime Bradesco",
+    requisito: "Segmento Bradesco Prime/Private",
+    salas_vip: "Priority Pass + Mastercard Black GRU",
+    programas: ["Livelo", "LATAM Pass", "Smiles", "Azul"],
+    spread: "5,8% spread (verificar)",
+    destaques: ["4 pt/$ todas as compras", "Spread 5,8%", "Priority Pass", "Referência do segmento"],
+    beneficios_completos: [
+      "4 pontos por dólar em todas as compras",
+      "Acesso Priority Pass + salas Mastercard Black",
+      "Transferência para principais programas aéreos brasileiros",
+      "Concierge 24/7",
+      "Spread de câmbio na casa de 5,8% (atenção: acima de concorrentes como Ultrablue)"
+    ],
+    loyalty_insight: "O Aeternum é a referência do segmento tradicional — mas está perdendo terreno para o Caixa Ícone em pontuação e para o BTG Ultrablue em spread. No mercado superluxo, também enfrenta concorrência do Centurion que o próprio Bradesco emite.",
+    fontes: ["diariodefinancas.com/melhores-cartoes-2026", "melhorescartoes.com.br"],
+    updated: "Abr 2026"
+  },
+  {
+    id: 12,
+    name: "C6 Graphene Black",
+    bank: "C6 Bank",
+    bandeira: "Mastercard Black",
+    tier: "black",
+    category: "digital",
+    pts_usd: 4.5,
+    pts_usd_label: "4,5 pt/$",
+    pts_note: "Todas as compras, pontos não expiram",
+    cashback: null,
+    cashback_note: null,
+    anuidade: 3960,
+    anuidade_label: "R$3.960/ano",
+    isencao: "100% com R$5M+ investidos no C6 (= acesso ao segmento Graphene)",
+    requisito: "R$5M+ investidos",
+    salas_vip: "Dragon Pass ilimitado + LoungeKey ilimitado + Mastercard Black GRU",
+    programas: ["LATAM Pass", "Smiles", "Azul Fidelidade", "Livelo"],
+    spread: "Verificar",
+    destaques: ["4,5 pt/$ sem limite", "3 redes VIP ilimitadas", "Pontos não expiram", "6 adicionais grátis"],
+    beneficios_completos: [
+      "4,5 pontos por dólar em todas as compras, pontos não expiram",
+      "Dragon Pass, LoungeKey e Mastercard Black GRU — todos ilimitados",
+      "6 cartões adicionais gratuitos",
+      "Transferência para LATAM Pass, Smiles, Azul Fidelidade, Livelo",
+      "Possibilidade de usar pontos para cashback, passagens ou produtos na C6 Store",
+      "Benefícios Mastercard World Legend (a partir de dez/2025, substituindo o Black)"
+    ],
+    loyalty_insight: "O C6 Graphene é o cartão Black mais completo em acesso a salas VIP — três redes simultâneas ilimitadas. Para o viajante que faz muitas conexões em aeroportos diferentes, isso é valor concreto.",
+    fontes: ["melhorescartoes.com.br/banco-digital-melhor-cartao-black", "melhorescartoes.com.br/mastercard-world-legend"],
+    updated: "Dez 2025"
+  },
+  {
+    id: 13,
+    name: "Itaú The One Black",
+    bank: "Itaú Personnalité",
+    bandeira: "Mastercard Black",
+    tier: "black",
+    category: "private",
+    pts_usd: 3.5,
+    pts_usd_label: "3–3,5 pt/$",
+    pts_note: "3 pt/$ nacional; 3,5 pt/$ internacional",
+    cashback: null,
+    cashback_note: null,
+    anuidade: 4000,
+    anuidade_label: "R$4.000/ano",
+    isencao: "50% c/ R$30k/mês; 100% c/ R$60k/mês de fatura",
+    requisito: "Personnalité / renda elevada",
+    salas_vip: "LoungeKey ilimitado + 12 convidados/ano + Mastercard Black GRU",
+    programas: ["LATAM Pass", "Smiles", "Azul Fidelidade", "TAP Miles&Go", "Livelo"],
+    spread: "Verificar",
+    destaques: ["LoungeKey + 12 convidados", "3,5 pt/$ exterior", "5 programas aéreos", "Isenção c/ R$60k"],
+    beneficios_completos: [
+      "3,5 pontos por dólar em compras internacionais",
+      "3 pontos por dólar em compras nacionais",
+      "LoungeKey ilimitado para titular + adicionais + até 12 convidados por ano",
+      "Salas Mastercard Black no GRU",
+      "Transferência para 5 programas aéreos",
+      "Seguros de viagem internacionais abrangentes",
+      "Concierge dedicado Personnalité"
+    ],
+    loyalty_insight: "Upgrade relevante sobre o Personnalité Black tradicional. A isenção de anuidade com R$60k/mês é realista para o executivo que concentra gastos corporativos no cartão.",
+    fontes: ["diariodefinancas.com/melhores-cartoes-2026", "altarendablog.com.br"],
+    updated: "Abr 2026"
+  },
+  {
+    id: 14,
+    name: "Bradesco Visa Infinite Privilege",
+    bank: "Bradesco",
+    bandeira: "Visa Infinite Privilege",
+    tier: "superluxo",
+    category: "private",
+    pts_usd: 5,
+    pts_usd_label: "4–5 pt/$",
+    pts_note: "Faixas de gasto progressivas",
+    cashback: "2,5%",
+    cashback_note: "Investback em todas as compras",
+    anuidade: 0,
+    anuidade_label: "R$25k–R$30k? (não divulgado)",
+    isencao: "R$25k/mês de fatura ou R$5M em investimentos",
+    requisito: "R$5M+ investidos / convidado",
+    salas_vip: "Visa Infinite Privilege Lounge GRU (ilimitado + acompanhantes) + LoungeKey ilimitado + DragonPass ilimitado",
+    programas: ["Livelo exclusivo 1:1 internacionais", "Verificar"],
+    spread: "3,5% IOF (spread reduzido)",
+    destaques: ["Helicóptero SP 1x/ano", "Meet & Greet GRU", "3 redes VIP ilimitadas", "IOF reduzido 3,5%"],
+    beneficios_completos: [
+      "Até 5 pontos por dólar em faixas progressivas (até R$25k: 4pt; R$25k-40k: 4,5pt; R$40k+: 5pt)",
+      "Até 2,5% de Investback em todas as compras no crédito",
+      "Compras internacionais: até 7% cashback e 13 pontos por dólar",
+      "1 trajeto de helicóptero gratuito por ano em São Paulo",
+      "Atendimento Meet & Greet no GRU Airport",
+      "LoungeKey ilimitado + DragonPass ilimitado + Visa Privilege Lounge GRU ilimitado",
+      "IOF reduzido: 3,5% (vs. 3,38% padrão — verificar especificidade)",
+      "Transferência de pontos para programas de fidelidade internacionais 1:1 via Livelo exclusivo"
+    ],
+    loyalty_insight: "Helicóptero e Meet & Greet no GRU são experiências que nenhum cartão black convencional oferece. Exatamente o tipo de benefício que o Goya Hono deveria incluir no tier mais alto — experiências memoráveis no momento da viagem.",
+    fontes: ["altarendablog.com.br/os-10-maiores-cartoes-de-credito-do-brasil-em-2025-edicao-final"],
+    updated: "Dez 2025"
+  },
+  {
+    id: 15,
+    name: "Safra Visa Infinite",
+    bank: "Banco Safra",
+    bandeira: "Visa Infinite",
+    tier: "black",
+    category: "private",
+    pts_usd: 3,
+    pts_usd_label: "2,5–3 pt/$",
+    pts_note: "Programa Safra de pontos",
+    cashback: null,
+    cashback_note: null,
+    anuidade: 0,
+    anuidade_label: "Isento (R$300k+ investidos)",
+    isencao: "R$300k+ aplicados no Banco Safra",
+    requisito: "R$300k+ investidos",
+    salas_vip: "Espaço Banco Safra (sala VIP própria) + Priority Pass",
+    programas: ["Parceiros Safra (passagens, experiências)", "Verificar transferências"],
+    spread: "Verificar",
+    destaques: ["Sala VIP própria Safra", "R$300k p/ isenção", "Acesso restrito", "Curadoria exclusiva"],
+    beneficios_completos: [
+      "Programa de pontos Safra com curadoria de recompensas premium",
+      "Pontos trocados por passagens aéreas e experiências de alto padrão",
+      "Espaço Banco Safra: sala VIP própria no GRU, considerada das mais completas do Brasil",
+      "Priority Pass para outros aeroportos",
+      "Benefícios Visa Infinite completos",
+      "Parcerias estratégicas com hotéis e experiências de luxo"
+    ],
+    loyalty_insight: "O Safra tem uma das salas VIP mais bem avaliadas do Brasil. Prova que o investimento em espaços físicos exclusivos cria vínculo emocional. Goya Hono tem oportunidade equivalente nos lounges de origem e destino.",
+    fontes: ["altarendablog.com.br/cartao-safra-visa-infinite"],
+    updated: "Jul 2025"
+  },
+  {
+    id: 16,
+    name: "Inter Win",
+    bank: "Banco Inter",
+    bandeira: "Mastercard Black",
+    tier: "black",
+    category: "private",
+    pts_usd: 2.5,
+    pts_usd_label: "~2,5 pt/$",
+    pts_note: "1 pt Inter Loop por R$2 gastos",
+    cashback: null,
+    cashback_note: "Pontos → cashback ou cias aéreas",
+    anuidade: 0,
+    anuidade_label: "Isento",
+    isencao: "R$1M+ investidos no Inter",
+    requisito: "R$1M+ investidos (segmento Win)",
+    salas_vip: "LoungeKey + Mastercard Black GRU",
+    programas: ["Azul Fidelidade", "Smiles (exclusivo Win)"],
+    spread: "Verificar",
+    destaques: ["Sem anuidade (R$1M+)", "Pontos → cashback ou milhas", "LoungeKey ilimitado", "Segmento Win exclusivo"],
+    beneficios_completos: [
+      "1 ponto Inter Loop a cada R$2 gastos (≈2,5 pt/$ estimado)",
+      "Pontos trocáveis por cashback ou transferidos para Azul Fidelidade e Smiles",
+      "LoungeKey ilimitado para titular",
+      "Mastercard Black Airport Lounge GRU",
+      "Zero anuidade para clientes Win (R$1M+ investidos)",
+      "Benefícios Mastercard Black completos"
+    ],
+    loyalty_insight: "Pontuação relativamente baixa para o requisito de entrada (R$1M+). Mas a isenção total e a presença no Inter (digital-first) indicam que o cliente de alta renda digital está buscando simplicidade, não status.",
+    fontes: ["melhorescartoes.com.br/banco-digital-melhor-cartao-black"],
+    updated: "Abr 2026"
+  },
+  {
+    id: 17,
+    name: "Itaú The One Infinite Privilege",
+    bank: "Itaú Personnalité",
+    bandeira: "Visa Infinite Privilege",
+    tier: "superluxo",
+    category: "private",
+    pts_usd: 5,
+    pts_usd_label: "4–5 pt/$",
+    pts_note: "Progressivo por fatura mensal",
+    cashback: null,
+    cashback_note: null,
+    anuidade: 0,
+    anuidade_label: "Isento (R$5M+ investidos Itaú)",
+    isencao: "R$5M+ investidos / R$25k de gastos mensais",
+    requisito: "R$5M+ Itaú Private / convidado",
+    salas_vip: "Visa Infinite Privilege Lounge GRU (ilimitado) + LoungeKey ilimitado + DragonPass ilimitado",
+    programas: ["LATAM Pass", "Smiles", "Azul Fidelidade", "Livelo", "TAP"],
+    spread: "Spread reduzido 5% / IOF reduzido 3,5%",
+    destaques: ["3 redes VIP ilimitadas", "Helicóptero 1x/ano SP", "Meet & Greet GRU", "5 programas aéreos"],
+    beneficios_completos: [
+      "Até 5 pontos por dólar em faixas progressivas",
+      "LoungeKey ilimitado + DragonPass ilimitado + Visa Infinite Privilege Lounge GRU ilimitado + acompanhantes",
+      "1 trajeto de helicóptero gratuito por ano em São Paulo",
+      "Atendimento Meet & Greet exclusivo no GRU",
+      "IOF reduzido 3,5% e spread 5%",
+      "Transferência para 5+ programas aéreos",
+      "Seguro de viagem internacional extenso",
+      "Lifestyle Manager dedicado Visa"
+    ],
+    loyalty_insight: "Dois benefícios diferenciam o Privilege Itaú: helicóptero e Meet & Greet. São exatamente os momentos da jornada de viagem — partida e chegada — onde o Goya pode posicionar experiências premium como parte do programa Hono.",
+    fontes: ["altarendablog.com.br/os-10-maiores-cartoes-de-credito-do-brasil-em-2025-edicao-final"],
+    updated: "Dez 2025"
+  },
+  {
+    id: 18,
+    name: "Nomad Explorer Infinite",
+    bank: "Nomad",
+    bandeira: "Visa Infinite",
+    tier: "black",
+    category: "digital",
+    pts_usd: 3,
+    pts_usd_label: "3 pt/$",
+    pts_note: "Cashback em USD + pontos",
+    cashback: "Cashback",
+    cashback_note: "Cashback em dólar na conta Nomad",
+    anuidade: 750,
+    anuidade_label: "R$750/ano",
+    isencao: "100% gastando 30% do limite mensal",
+    requisito: "Conta Nomad",
+    salas_vip: "Sala VIP Nomad GRU ilimitada + Visa Airport Companion (4 acessos)",
+    programas: ["Livelo (verificar)"],
+    spread: "Spread zero / sem IOF",
+    destaques: ["Cashback em dólar", "Spread zero", "Sala própria GRU", "Sem IOF"],
+    beneficios_completos: [
+      "3 pontos por dólar em compras",
+      "Cashback em moeda americana direto na conta Nomad",
+      "Spread zero e sem IOF em compras internacionais",
+      "Acesso ilimitado à Sala VIP Nomad em Guarulhos",
+      "4 acessos por ano ao Visa Airport Companion",
+      "Benefícios Visa Infinite completos"
+    ],
+    loyalty_insight: "O Nomad é o cartão do viajante digital frequente: zero fricção cambial. Para o perfil Goya de executivo com gastos internacionais, a integração de conta global + cartão sem IOF é uma combinação difícil de superar no custo-benefício puro.",
+    fontes: ["diariodefinancas.com/melhores-cartoes-2026", "passageirodeprimeira.com"],
+    updated: "Abr 2026"
+  }
+];
+
+// ─── STATE ───
+let currentFilter = 'todos';
+let currentSort = 'pts_desc';
+let expandedCard = null;
+
+// ─── RENDER ───
+function renderCards() {
+  let data = [...CARDS_DATA];
+
+  // Filter
+  if (currentFilter !== 'todos') {
+    data = data.filter(c => {
+      if (currentFilter === 'superluxo') return c.tier === 'superluxo';
+      if (currentFilter === 'black') return c.tier === 'black';
+      if (currentFilter === 'digital') return c.category === 'digital';
+      if (currentFilter === 'private') return c.category === 'private' || c.category === 'superluxo';
+      return true;
+    });
+  }
+
+  // Sort
+  data.sort((a, b) => {
+    if (currentSort === 'pts_desc') return (b.pts_usd || 0) - (a.pts_usd || 0);
+    if (currentSort === 'pts_asc') return (a.pts_usd || 0) - (b.pts_usd || 0);
+    if (currentSort === 'anuidade_asc') return a.anuidade - b.anuidade;
+    if (currentSort === 'anuidade_desc') return b.anuidade - a.anuidade;
+    return 0;
+  });
+
+  const grid = document.getElementById('cards-grid');
+  grid.innerHTML = data.map(card => {
+    const tierClass = card.tier === 'superluxo' ? 'ultra' : (card.tier === 'black' ? 'infinite' : 'black');
+    const tierLabel = card.tier === 'superluxo' ? 'Superluxo' : (card.bandeira.includes('World Legend') ? 'World Legend' : card.tier.charAt(0).toUpperCase() + card.tier.slice(1));
+    const badgeClass = card.tier === 'superluxo' ? 'ultra' : (card.bandeira.includes('World Legend') ? 'legend' : card.tier === 'black' ? 'black' : 'infinite');
+
+    return `
+    <div class="card-item" id="card-${card.id}" onclick="toggleCard(${card.id}, event)">
+      <div class="card-tier-strip ${tierClass}"></div>
+      <div class="card-body-wrap">
+        <div class="card-head">
+          <div class="card-name-block">
+            <div class="card-name">${card.name}</div>
+            <div class="card-bank">${card.bank} · ${card.bandeira}</div>
+          </div>
+          <span class="tier-badge ${badgeClass}">${tierLabel}</span>
+        </div>
+
+        <div class="metrics-row">
+          <div class="metric-box">
+            <div class="metric-val">${card.pts_usd_label}</div>
+            <div class="metric-key">pts/dólar</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val">${card.cashback || '—'}</div>
+            <div class="metric-key">cashback</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val" style="font-size:16px;">${card.anuidade_label}</div>
+            <div class="metric-key">anuidade</div>
+          </div>
+        </div>
+
+        <div class="quick-benefits">
+          ${card.destaques.slice(0,4).map((d, i) => `<span class="benefit-tag ${i === 0 ? 'highlight' : ''}">${d}</span>`).join('')}
+        </div>
+      </div>
+
+      <button class="card-expand-toggle">
+        <span>Ver análise completa</span>
+        <span class="chevron">▾</span>
+      </button>
+
+      <div class="card-detail">
+        <div class="detail-inner">
+          <div class="detail-section">
+            <div class="detail-section-title">Benefícios verificados</div>
+            <ul class="detail-list">
+              ${card.beneficios_completos.map(b => `<li>${b}</li>`).join('')}
+            </ul>
+          </div>
+          <div class="detail-section">
+            <div class="detail-section-title">Requisito de acesso</div>
+            <ul class="detail-list">
+              <li>${card.requisito}</li>
+              <li>Isenção: ${card.isencao}</li>
+              ${card.programas.length ? `<li>Programas parceiros: ${card.programas.join(', ')}</li>` : ''}
+            </ul>
+          </div>
+          <div class="detail-section">
+            <div class="detail-section-title">Insight para o Goya Hono</div>
+            <div class="loyalty-insight">${card.loyalty_insight}</div>
+          </div>
+        </div>
+        <div class="sources-row">
+          Fontes: ${card.fontes.join(' · ')} · Verificado: ${card.updated}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCard(id, event) {
+  if (event.target.closest('.card-expand-toggle') === null && event.target.closest('.card-detail') !== null) return;
+  const el = document.getElementById('card-' + id);
+  const isExpanded = el.classList.contains('expanded');
+  document.querySelectorAll('.card-item.expanded').forEach(c => c.classList.remove('expanded'));
+  if (!isExpanded) el.classList.add('expanded');
+}
+
+function filterCards(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  renderCards();
+}
+
+function sortCards(val) {
+  currentSort = val;
+  renderCards();
+}
+
+// ─── DAILY UPDATE (Claude API) ───
+function doLogout() {
+  if (window.netlifyIdentity && window.netlifyIdentity.currentUser()) {
+    window.netlifyIdentity.logout();
+  } else {
+    localStorage.clear();
+    window.location.href = '/login.html';
+  }
+}
+
+async function fetchDailyUpdate() {
+  const btn = document.getElementById('update-btn');
+  const content = document.getElementById('update-btn-content');
+  btn.disabled = true;
+  content.innerHTML = '<div class="spin"></div> Buscando...';
+
+  const SYSTEM = `Você é um analista especializado em cartões de crédito premium do Brasil e estratégia de loyalty para alto padrão. Monitore as principais fontes (Melhores Cartões, Passageiro de Primeira, Alta Renda Blog, Pontos pra Voar, sites dos emissores) e gere updates sobre: mudanças de pontuação, novos emissores de superluxo, lançamentos, alertas regulatórios ou promoções especiais relevantes para executivos de alto padrão e programas de loyalty corporativos.
+
+Responda APENAS em JSON, sem markdown:
+{
+  "data": "data atual",
+  "items": [
+    {
+      "categoria": "mudanca|lancamento|alerta|insight",
+      "titulo": "até 80 chars",
+      "corpo": "2-3 linhas: o que mudou e por que importa para um programa de loyalty de alto padrão como o Goya Hono",
+      "cartao": "nome do cartão ou 'Mercado geral'",
+      "impacto_loyalty": "1 linha: implicação direta para programa de loyalty premium"
+    }
+  ]
+}
+Gere 4-6 items. Se não houver novidades verificadas, gere insights sobre tendências do mercado premium de loyalty.`;
+
+  try {
+    const res = await fetch('/.netlify/functions/ai-update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+
+    const parsed = await res.json();
+
+    document.getElementById('update-timestamp').textContent = '↻ ' + parsed.data + ' · Fontes: Melhores Cartões, Passageiro de Primeira, Alta Renda Blog';
+    
+    const catDot = { mudanca: 'cat-mudanca', lancamento: 'cat-lancamento', alerta: 'cat-alerta', insight: 'cat-insight' };
+    const catLabel = { mudanca: 'Mudança', lancamento: 'Lançamento', alerta: 'Alerta', insight: 'Insight' };
+
+    document.getElementById('update-cards').innerHTML = (parsed.items || []).map(item => `
+      <div class="update-card">
+        <div class="update-card-header">
+          <div class="update-cat-dot ${catDot[item.categoria] || 'cat-insight'}"></div>
+          <div class="update-card-title">${item.titulo}</div>
+        </div>
+        <div class="update-card-body">${item.corpo}</div>
+        ${item.impacto_loyalty ? `<div class="update-card-body" style="margin-top:6px;color:#7ec8e3;font-style:italic;">→ ${item.impacto_loyalty}</div>` : ''}
+        <div class="update-card-cat">${catLabel[item.categoria] || 'Insight'} · ${item.cartao}</div>
+      </div>
+    `).join('');
+
+    document.getElementById('update-result').classList.add('visible');
+    document.getElementById('last-updated').textContent = 'Atualizado: ' + new Date().toLocaleDateString('pt-BR');
+
+  } catch(e) {
+    document.getElementById('update-cards').innerHTML = '<div style="color:rgba(232,224,208,0.5);font-size:12px;padding:12px 0;">Erro ao buscar dados. Verifique sua conexão.</div>';
+    document.getElementById('update-result').classList.add('visible');
+  } finally {
+    btn.disabled = false;
+    content.textContent = '↻ Atualizar novamente';
+  }
+}
+
+function fetchUpdates() {
+  fetchDailyUpdate();
+}
+
+// ─── INIT ───
+renderCards();
+</script>
+</body>
+</html>

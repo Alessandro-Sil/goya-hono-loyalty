@@ -1,0 +1,23 @@
+# Variáveis de ambiente — NUNCA commitar
+.env
+.env.local
+.env.*.local
+
+# Netlify local dev
+.netlify/
+netlify/functions/.netlify/
+
+# Node
+node_modules/
+package-lock.json
+yarn.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Goya Hono — Acesso Restrito</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400&family=DM+Mono:wght@300;400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a1a26;
+  --surface: #0f2433;
+  --border: rgba(255,255,255,0.08);
+  --border-hover: rgba(91,163,201,0.4);
+  --text: #e8f0f5;
+  --muted: rgba(200,220,235,0.5);
+  --accent: #2C5F7A;
+  --accent-light: #5ba3c9;
+  --error: #c94060;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 300;
+}
+
+/* Subtle background texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(44,95,122,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(27,58,75,0.2) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Logo */
+.logo-wrap {
+  margin-bottom: 48px;
+  text-align: center;
+}
+
+.logo-wrap img {
+  height: 60px;
+  width: auto;
+  display: block;
+  margin: 0 auto 12px;
+}
+
+.logo-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Card */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 40px 44px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.card-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px;
+  font-weight: 300;
+  color: var(--text);
+  margin-bottom: 6px;
+  letter-spacing: 0.01em;
+}
+
+.card-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+/* Form */
+.field {
+  margin-bottom: 18px;
+}
+
+.field label {
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-light);
+  margin-bottom: 7px;
+}
+
+.field input {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 11px 14px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.field input:focus {
+  border-color: var(--border-hover);
+  background: rgba(91,163,201,0.05);
+}
+
+.field input::placeholder { color: rgba(200,220,235,0.25); }
+
+/* MFA row */
+.mfa-row {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.mfa-row.visible { display: flex; }
+
+.mfa-row .field { flex: 1; margin-bottom: 0; }
+
+.mfa-resend {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--accent-light);
+  background: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 0;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.mfa-resend:hover { opacity: 1; }
+
+/* Submit */
+.btn-login {
+  width: 100%;
+  padding: 13px;
+  background: var(--accent);
+  color: var(--text);
+  border: none;
+  border-radius: 3px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.15s;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-login:hover { background: #3a7a9e; }
+.btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Spinner */
+.spin {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: none;
+}
+.btn-login.loading .spin { display: block; }
+.btn-login.loading .btn-label { display: none; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Messages */
+.msg {
+  font-size: 12px;
+  padding: 10px 14px;
+  border-radius: 3px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+  display: none;
+}
+.msg.visible { display: block; }
+.msg.error { background: rgba(201,64,96,0.1); border: 1px solid rgba(201,64,96,0.25); color: #f0809a; }
+.msg.success { background: rgba(91,163,201,0.08); border: 1px solid rgba(91,163,201,0.2); color: var(--accent-light); }
+.msg.info { background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--muted); }
+
+/* Domain note */
+.domain-note {
+  margin-top: 20px;
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: rgba(200,220,235,0.2);
+  letter-spacing: 0.08em;
+}
+
+/* Forgot password */
+.forgot-link {
+  display: block;
+  text-align: right;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: rgba(91,163,201,0.5);
+  margin-top: 6px;
+  cursor: pointer;
+  transition: color 0.15s;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.forgot-link:hover { color: var(--accent-light); }
+
+/* Step indicator */
+.steps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.step-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.step-dot.active { background: var(--accent-light); }
+.step-dot.done { background: rgba(91,163,201,0.4); }
+.step-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Footer */
+.footer {
+  margin-top: 32px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: rgba(200,220,235,0.15);
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="logo-wrap">
+    <img src="data:image/png;base64,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" alt="Goya Hono">
+    <div class="logo-label">Loyalty Lab · Acesso Restrito</div>
+  </div>
+
+  <div class="card">
+    <!-- Step indicator -->
+    <div class="steps">
+      <div class="step-dot active" id="dot-1"></div>
+      <div class="step-line"></div>
+      <div class="step-dot" id="dot-2"></div>
+    </div>
+
+    <!-- Step 1: Email + senha -->
+    <div id="step-1">
+      <div class="card-title">Bem-vindo</div>
+      <div class="card-sub" id="step-sub">Acesso exclusivo para o time Goya · Copastur</div>
+
+      <div class="msg" id="msg-box"></div>
+
+      <div class="field">
+        <label>E-mail corporativo</label>
+        <input type="email" id="email" placeholder="nome@copastur.com.br" autocomplete="email" />
+      </div>
+
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <button class="forgot-link" onclick="handleForgot()">Esqueceu a senha?</button>
+
+      <button class="btn-login" id="btn-step1" onclick="handleLogin()">
+        <div class="spin"></div>
+        <span class="btn-label">Entrar</span>
+      </button>
+    </div>
+
+    <!-- Step 2: Código MFA -->
+    <div id="step-2" style="display:none;">
+      <div class="card-title">Verificação</div>
+      <div class="card-sub">Enviamos um código de 6 dígitos para <strong id="email-shown" style="color:var(--accent-light);font-weight:400;"></strong></div>
+
+      <div class="msg" id="msg-box-2"></div>
+
+      <div class="field">
+        <label>Código de verificação</label>
+        <input type="text" id="mfa-code" placeholder="000000" maxlength="6" autocomplete="one-time-code"
+          oninput="this.value=this.value.replace(/\D/g,'')"
+          onkeydown="if(event.key==='Enter')handleMFA()" />
+      </div>
+      <button class="forgot-link" id="resend-btn" onclick="handleResend()">Reenviar código</button>
+
+      <button class="btn-login" id="btn-step2" onclick="handleMFA()">
+        <div class="spin"></div>
+        <span class="btn-label">Verificar e acessar</span>
+      </button>
+    </div>
+
+    <div class="domain-note">@copastur.com.br · @goyatravel.com.br</div>
+  </div>
+
+  <div class="footer">Biosfera Copastur · Goya Hono Loyalty Lab · Uso interno</div>
+</div>
+
+<script>
+// ─── ALLOWED DOMAINS ───
+const ALLOWED_DOMAINS = ['copastur.com.br', 'goyatravel.com.br'];
+
+// ─── NETLIFY IDENTITY INIT ───
+netlifyIdentity.on('init', user => {
+  if (user) {
+    window.location.href = '/';
+  }
+});
+
+netlifyIdentity.on('login', user => {
+  window.location.href = '/';
+});
+
+netlifyIdentity.on('error', err => {
+  showMsg('msg-box', 'error', 'Erro de autenticação. Verifique suas credenciais.');
+  setLoading('btn-step1', false);
+});
+
+// ─── HELPERS ───
+function showMsg(id, type, text) {
+  const el = document.getElementById(id);
+  el.className = 'msg visible ' + type;
+  el.textContent = text;
+}
+
+function hideMsg(id) {
+  const el = document.getElementById(id);
+  el.className = 'msg';
+}
+
+function setLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  if (loading) btn.classList.add('loading');
+  else btn.classList.remove('loading');
+  btn.disabled = loading;
+}
+
+function validateDomain(email) {
+  const domain = email.split('@')[1] || '';
+  return ALLOWED_DOMAINS.includes(domain);
+}
+
+// ─── STEP 1: LOGIN ───
+function handleLogin() {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  hideMsg('msg-box');
+
+  if (!email || !password) {
+    showMsg('msg-box', 'error', 'Preencha e-mail e senha.');
+    return;
+  }
+
+  if (!validateDomain(email)) {
+    showMsg('msg-box', 'error', 'Acesso permitido apenas para e-mails @copastur.com.br ou @goyatravel.com.br.');
+    return;
+  }
+
+  setLoading('btn-step1', true);
+
+  // Use Netlify Identity to authenticate
+  netlifyIdentity.store.user = null;
+  fetch('/.netlify/identity/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'password', username: email, password: password })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.error) {
+      showMsg('msg-box', 'error', 'E-mail ou senha incorretos.');
+      setLoading('btn-step1', false);
+      return;
+    }
+    // Store token temporarily, proceed to MFA step
+    window._authToken = data.access_token;
+    window._authEmail = email;
+    sendMFACode(email);
+  })
+  .catch(() => {
+    showMsg('msg-box', 'error', 'Erro de conexão. Tente novamente.');
+    setLoading('btn-step1', false);
+  });
+}
+
+// ─── MFA: SEND CODE VIA NETLIFY FUNCTION ───
+function sendMFACode(email) {
+  fetch('/.netlify/functions/send-mfa', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  })
+  .then(res => res.json())
+  .then(data => {
+    setLoading('btn-step1', false);
+    if (data.ok) {
+      goToStep2(email);
+    } else {
+      showMsg('msg-box', 'error', 'Erro ao enviar código. Tente novamente.');
+    }
+  })
+  .catch(() => {
+    setLoading('btn-step1', false);
+    showMsg('msg-box', 'error', 'Erro ao enviar código de verificação.');
+  });
+}
+
+function goToStep2(email) {
+  document.getElementById('step-1').style.display = 'none';
+  document.getElementById('step-2').style.display = 'block';
+  document.getElementById('email-shown').textContent = email;
+  document.getElementById('dot-1').className = 'step-dot done';
+  document.getElementById('dot-2').className = 'step-dot active';
+  document.getElementById('mfa-code').focus();
+
+  // Resend cooldown
+  startResendCooldown();
+}
+
+// ─── MFA: VERIFY CODE ───
+function handleMFA() {
+  const code = document.getElementById('mfa-code').value.trim();
+  hideMsg('msg-box-2');
+
+  if (code.length !== 6) {
+    showMsg('msg-box-2', 'error', 'Digite o código de 6 dígitos.');
+    return;
+  }
+
+  setLoading('btn-step2', true);
+
+  fetch('/.netlify/functions/verify-mfa', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: window._authEmail, code })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.ok) {
+      showMsg('msg-box-2', 'success', 'Verificado! Redirecionando...');
+      // Set Netlify Identity session and redirect
+      setTimeout(() => {
+        localStorage.setItem('gotrue-session', JSON.stringify({
+          access_token: window._authToken,
+          expires_at: Date.now() + 3600000
+        }));
+        window.location.href = '/';
+      }, 800);
+    } else {
+      showMsg('msg-box-2', 'error', data.message || 'Código incorreto ou expirado.');
+      setLoading('btn-step2', false);
+    }
+  })
+  .catch(() => {
+    showMsg('msg-box-2', 'error', 'Erro de verificação. Tente novamente.');
+    setLoading('btn-step2', false);
+  });
+}
+
+// ─── RESEND COOLDOWN ───
+function startResendCooldown() {
+  const btn = document.getElementById('resend-btn');
+  let seconds = 60;
+  btn.disabled = true;
+  btn.style.opacity = '0.3';
+  btn.textContent = `Reenviar em ${seconds}s`;
+  const timer = setInterval(() => {
+    seconds--;
+    btn.textContent = `Reenviar em ${seconds}s`;
+    if (seconds <= 0) {
+      clearInterval(timer);
+      btn.disabled = false;
+      btn.style.opacity = '0.7';
+      btn.textContent = 'Reenviar código';
+    }
+  }, 1000);
+}
+
+function handleResend() {
+  hideMsg('msg-box-2');
+  showMsg('msg-box-2', 'info', 'Enviando novo código...');
+  sendMFACode(window._authEmail);
+  startResendCooldown();
+}
+
+// ─── FORGOT PASSWORD ───
+function handleForgot() {
+  const email = document.getElementById('email').value.trim();
+  if (!email || !validateDomain(email)) {
+    showMsg('msg-box', 'info', 'Digite seu e-mail corporativo acima para recuperar a senha.');
+    return;
+  }
+  netlifyIdentity.requestPasswordRecovery(email);
+  showMsg('msg-box', 'success', 'Link de recuperação enviado para ' + email);
+}
+
+// ─── ENTER KEY ───
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleLogin();
+  });
+});
+</script>
+</body>
+</html>

@@ -526,12 +526,19 @@ function handleResend() {
 // ─── FORGOT PASSWORD ───
 function handleForgot() {
   const email = document.getElementById('email').value.trim();
-  if (!email || !validateDomain(email)) {
-    showMsg('msg-box', 'info', 'Digite seu e-mail corporativo acima para recuperar a senha.');
+  if (!email) {
+    showMsg('msg-box', 'info', 'Digite seu e-mail acima primeiro.');
     return;
   }
-  netlifyIdentity.requestPasswordRecovery(email);
-  showMsg('msg-box', 'success', 'Link de recuperação enviado para ' + email);
+  fetch('https://goyahonoloyalty.netlify.app/.netlify/identity/recover', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email })
+  }).then(() => {
+    showMsg('msg-box', 'success', 'Link enviado para ' + email + '. Verifique sua caixa de entrada e spam.');
+  }).catch(() => {
+    showMsg('msg-box', 'error', 'Erro ao enviar. Tente novamente.');
+  });
 }
 
 // ─── ENTER KEY ───

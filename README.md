@@ -1,6 +1,6 @@
 # Goya Hono · Premium Cards Intelligence
 
-> Plataforma interna de inteligência de cartões premium para o programa de fidelidade Goya Hono — Goya Travel / Biosfera Copastur.
+> Plataforma interna de inteligência de cartões premium para o programa de fidelidade Goya Hono Goya Travel / Biosfera Copastur.
 
 ---
 

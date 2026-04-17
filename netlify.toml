@@ -2,15 +2,19 @@
   publish = "."
   functions = "netlify/functions"
 
-# Protege todas as rotas — redireciona para login se não autenticado
+# Rota raiz — redireciona para login (proteção gratuita)
 [[redirects]]
-  from = "/*"
+  from = "/"
   to = "/login.html"
-  status = 200
-  conditions = {Role = ["authenticated"]}
-  force = false
+  status = 302
 
-# Rotas públicas (login e assets da função)
+# Protege index.html — redireciona para login se não autenticado
+[[redirects]]
+  from = "/index.html"
+  to = "/login.html"
+  status = 302
+
+# Rotas públicas — login e funções Netlify
 [[redirects]]
   from = "/login.html"
   to = "/login.html"
@@ -30,8 +34,3 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Cache-Control = "no-store, no-cache, must-revalidate"
-
-# Netlify Identity — habilitar no painel após deploy
-[identity]
-  # Configurar no painel: Settings > Identity > Enable
-  # Invite only: Settings > Identity > Registration > Invite only

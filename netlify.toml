@@ -2,19 +2,19 @@
   publish = "."
   functions = "netlify/functions"
 
-# Rota raiz — redireciona para login (proteção gratuita)
+[template.environment]
+  NETLIFY_IDENTITY_REDIRECT_URL = "https://goyahonoloyalty.netlify.app"
+
 [[redirects]]
   from = "/"
   to = "/login.html"
   status = 302
 
-# Protege index.html — redireciona para login se não autenticado
 [[redirects]]
   from = "/index.html"
   to = "/login.html"
   status = 302
 
-# Rotas públicas — login e funções Netlify
 [[redirects]]
   from = "/login.html"
   to = "/login.html"
@@ -25,7 +25,6 @@
   to = "/.netlify/:splat"
   status = 200
 
-# Cabeçalhos de segurança
 [[headers]]
   for = "/*"
   [headers.values]

@@ -530,7 +530,7 @@ function handleForgot() {
     showMsg('msg-box', 'info', 'Digite seu e-mail acima primeiro.');
     return;
   }
-  fetch('https://goyahonoloyalty.netlify.app/.netlify/identity/recover', {
+  fetch('/.netlify/identity/recover', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: email })

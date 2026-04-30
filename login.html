@@ -451,8 +451,6 @@
 // ─── Configuração ───────────────────────────────────────────────────────────
 // Senha de acesso ao Loyalty Lab — deve bater com ADMIN_PASSWORD no Netlify
 // Para múltiplos usuários, implemente via Netlify Identity ou base de dados.
-const ADMIN_PASSWORD = window.__ADMIN_PASSWORD__ || 'GoyaHono2026!';
-
 let currentResetEmail = '';
 let currentToken = '';
 let resendTimer = null;
@@ -494,7 +492,7 @@ function setStatus(id, msg, type = 'error') {
 }
 
 // ─── Login ───────────────────────────────────────────────────────────────────
-function handleLogin() {
+async function handleLogin() {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
 
@@ -507,14 +505,32 @@ function handleLogin() {
     setStatus('login-status', 'Use seu e-mail @copastur.com.br ou @goyatravel.com.br.'); return;
   }
 
-  if (password !== ADMIN_PASSWORD) {
-    setStatus('login-status', 'Senha incorreta. Esqueceu sua senha? Use o link abaixo.'); return;
-  }
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true;
+  btn.textContent = 'Verificando...';
+  setStatus('login-status', '', 'info');
 
-  // Login OK — redireciona para o app
-  sessionStorage.setItem('gh_user', email);
-  setStatus('login-status', 'Autenticando...', 'success');
-  setTimeout(() => { window.location.href = 'index.html'; }, 600);
+  try {
+    const res = await fetch('/.netlify/functions/verify-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      sessionStorage.setItem('gh_user', email);
+      setStatus('login-status', 'Autenticando...', 'success');
+      setTimeout(() => { window.location.href = 'index.html'; }, 600);
+    } else {
+      setStatus('login-status', data.message || 'Senha incorreta. Esqueceu sua senha? Use o link abaixo.');
+    }
+  } catch {
+    setStatus('login-status', 'Erro de conexão. Tente novamente.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
 }
 
 // Enter no campo de senha faz login

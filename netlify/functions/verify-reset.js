@@ -1,16 +1,9 @@
 /**
- * verify-reset.js
- * Goya Hono · Loyalty Lab
- *
- * Valida o código OTP de reset e autentica o usuário
- * definindo uma senha nova via variável de ambiente.
- *
- * Variáveis de ambiente necessárias no Netlify:
- *   ADMIN_PASSWORD — senha global de acesso ao Loyalty Lab
+ * verify-reset.js v2 — Goya Hono · Loyalty Lab
+ * Lê o código do Netlify Blobs para validar corretamente.
  */
 
-if (!global.__resetStore) global.__resetStore = {};
-const resetStore = global.__resetStore;
+const { getStore } = require('@netlify/blobs');
 
 exports.handler = async (event) => {
   const headers = {
@@ -22,9 +15,9 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
   if (event.httpMethod !== 'POST') return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
 
-  let email, code, newPassword;
+  let email, code;
   try {
-    ({ email, code, newPassword } = JSON.parse(event.body || '{}'));
+    ({ email, code } = JSON.parse(event.body || '{}'));
   } catch {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Body inválido' }) };
   }
@@ -33,34 +26,10 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ ok: false, message: 'E-mail e código são obrigatórios.' }) };
   }
 
-  const stored = resetStore[email];
-
-  if (!stored) {
-    return { statusCode: 400, headers, body: JSON.stringify({ ok: false, message: 'Nenhum código encontrado para este e-mail. Solicite um novo.' }) };
-  }
-
-  if (Date.now() > stored.expiresAt) {
-    delete resetStore[email];
-    return { statusCode: 400, headers, body: JSON.stringify({ ok: false, message: 'Código expirado. Solicite um novo.' }) };
-  }
-
-  if (stored.code !== String(code).trim()) {
-    return { statusCode: 400, headers, body: JSON.stringify({ ok: false, message: 'Código inválido. Verifique e tente novamente.' }) };
-  }
-
-  // Código válido — limpa o store e retorna sucesso com token de sessão
-  delete resetStore[email];
-
-  const sessionToken = Buffer.from(`${email}:${Date.now()}`).toString('base64');
-
-  return {
-    statusCode: 200,
-    headers,
-    body: JSON.stringify({
-      ok: true,
-      message: 'Código validado com sucesso.',
-      sessionToken,
-      email
-    })
-  };
-};
+  let stored;
+  try {
+    const store = getStore({ name: 'reset-codes', consistency: 'strong' });
+    stored = await store.get(email, { type: 'json' });
+  } catch (err) {
+    console.error('Blob error:', err);
+    return { statusCode: 500, headers, body: JSON.stringify({ ok: false, message: 'Err

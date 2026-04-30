@@ -1,20 +1,31 @@
 /**
- * send-reset.js v2 — Goya Hono · Loyalty Lab
- * Usa Netlify Blobs para persistir o código entre invocações.
+ * send-reset.js v3 — Goya Hono · Loyalty Lab
+ * HMAC stateless — sem banco, sem blobs, funciona no plano free.
+ *
+ * Variáveis de ambiente no Netlify:
+ *   SENDGRID_API_KEY  — chave SendGrid
+ *   FROM_EMAIL        — remetente verificado
+ *   RESET_SECRET      — string secreta qualquer (ex: GoyaHonoSecret2026)
  */
 
-const { getStore } = require('@netlify/blobs');
+const crypto = require('crypto');
 
 const ALLOWED_DOMAINS = ['copastur.com.br', 'goyatravel.com.br'];
 const CODE_TTL_MS = 15 * 60 * 1000;
+
+function validateDomain(email) {
+  const domain = (email || '').split('@')[1] || '';
+  return ALLOWED_DOMAINS.includes(domain);
+}
 
 function generateCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-function validateDomain(email) {
-  const domain = (email || '').split('@')[1] || '';
-  return ALLOWED_DOMAINS.includes(domain);
+function makeToken(email, code, expiresAt, secret) {
+  const payload = `${email}|${code}|${expiresAt}`;
+  const hmac = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+  return Buffer.from(`${payload}|${hmac}`).toString('base64url');
 }
 
 async function sendResetEmail(to, code, apiKey, fromEmail) {
@@ -70,7 +81,7 @@ async function sendResetEmail(to, code, apiKey, fromEmail) {
   return res.status === 202;
 }
 
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -93,6 +104,7 @@ exports.handler = async (event, context) => {
 
   const apiKey = process.env.SENDGRID_API_KEY;
   const fromEmail = process.env.FROM_EMAIL;
+  const secret = process.env.RESET_SECRET || 'GoyaHonoDefaultSecret2026';
 
   if (!apiKey || !fromEmail) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Configuração de e-mail ausente' }) };
@@ -100,15 +112,7 @@ exports.handler = async (event, context) => {
 
   const code = generateCode();
   const expiresAt = Date.now() + CODE_TTL_MS;
-
-  // Salva no Netlify Blobs — persiste entre invocações
-  try {
-    const store = getStore({ name: 'reset-codes', consistency: 'strong' });
-    await store.setJSON(email, { code, expiresAt });
-  } catch (err) {
-    console.error('Blob error:', err);
-    return { statusCode: 500, headers, body: JSON.stringify({ ok: false, message: 'Erro interno. Tente novamente.' }) };
-  }
+  const token = makeToken(email, code, expiresAt, secret);
 
   const sent = await sendResetEmail(email, code, apiKey, fromEmail);
 
@@ -116,5 +120,9 @@ exports.handler = async (event, context) => {
     return { statusCode: 500, headers, body: JSON.stringify({ ok: false, message: 'Falha ao enviar e-mail. Tente novamente.' }) };
   }
 
-  return { statusCode: 200, headers, body: JSON.stringify({ ok: true, message: 'Código enviado com sucesso.' }) };
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({ ok: true, token, message: 'Código enviado com sucesso.' })
+  };
 };

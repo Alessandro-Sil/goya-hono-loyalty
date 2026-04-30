@@ -32,4 +32,30 @@ exports.handler = async (event) => {
     stored = await store.get(email, { type: 'json' });
   } catch (err) {
     console.error('Blob error:', err);
-    return { statusCode: 500, headers, body: JSON.stringify({ ok: false, message: 'Err
+    return { statusCode: 500, headers, body: JSON.stringify({ ok: false, message: 'Erro interno. Tente novamente.' }) };
+  }
+
+  if (!stored) {
+    return { statusCode: 400, headers, body: JSON.stringify({ ok: false, message: 'Nenhum código encontrado. Solicite um novo.' }) };
+  }
+
+  if (Date.now() > stored.expiresAt) {
+    return { statusCode: 400, headers, body: JSON.stringify({ ok: false, message: 'Código expirado. Solicite um novo.' }) };
+  }
+
+  if (stored.code !== String(code).trim()) {
+    return { statusCode: 400, headers, body: JSON.stringify({ ok: false, message: 'Código inválido. Verifique e tente novamente.' }) };
+  }
+
+  // Código válido — apaga do store
+  try {
+    const store = getStore({ name: 'reset-codes', consistency: 'strong' });
+    await store.delete(email);
+  } catch (_) {}
+
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({ ok: true, message: 'Código validado com sucesso.' })
+  };
+};

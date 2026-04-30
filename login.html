@@ -454,6 +454,7 @@
 const ADMIN_PASSWORD = window.__ADMIN_PASSWORD__ || 'GoyaHono2026!';
 
 let currentResetEmail = '';
+let currentToken = '';
 let resendTimer = null;
 let resendSeconds = 60;
 
@@ -546,6 +547,7 @@ async function handleSendCode() {
 
     if (data.ok) {
       currentResetEmail = email;
+      currentToken = data.token || '';
       document.getElementById('reset-email-display').textContent = email;
       startResendTimer();
       showStep('step-reset-verify');
@@ -579,7 +581,7 @@ async function handleVerifyCode() {
     const res = await fetch('/.netlify/functions/verify-reset', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: currentResetEmail, code })
+      body: JSON.stringify({ email: currentResetEmail, code, token: currentToken })
     });
     const data = await res.json();
 

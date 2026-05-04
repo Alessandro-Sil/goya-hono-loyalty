@@ -69,4 +69,39 @@
         <p style="font-size:13px;color:var(--cream);margin:0">alessandro.silveira@copastur.com.br</p>
       </div>
       <div style="text-align:center">
-        <button class="l
+        <button class="link-btn" onclick="show('step-login')">← Voltar ao login</button>
+      </div>
+    </div>
+    <div class="step" id="step-success">
+      <div class="success-icon">✓</div>
+      <p class="step-title" style="text-align:center">Acesso autorizado</p>
+      <p class="step-desc" style="text-align:center;margin-bottom:0">Redirecionando...</p>
+    </div>
+  </div>
+  <div class="card-footer">
+    <p>@copastur.com.br · @goyatravel.com.br</p>
+  </div>
+</div>
+<script>
+const PASSWORD_HASH='3923ce5505c621de957fde1fde143c43b0206ff86f90beef07c40f2519095705';
+const ALLOWED_DOMAINS=['copastur.com.br','goyatravel.com.br'];
+function show(id){document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+async function sha256(str){const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('')}
+async function handleLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const password=document.getElementById('login-password').value;
+  const status=document.getElementById('login-status');
+  status.textContent='';
+  if(!email||!password){status.textContent='Preencha e-mail e senha.';return}
+  const domain=email.split('@')[1]||'';
+  if(!ALLOWED_DOMAINS.includes(domain)){status.textContent='Use seu e-mail @copastur.com.br ou @goyatravel.com.br.';return}
+  const hash=await sha256(password);
+  if(hash!==PASSWORD_HASH){status.textContent='Senha incorreta.';return}
+  sessionStorage.setItem('gh_user',email);
+  show('step-success');
+  setTimeout(()=>{window.location.href='index.html'},800);
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter')handleLogin()});
+</script>
+</body>
+</html>

@@ -99,7 +99,7 @@ async function handleLogin(){
   if(hash!==PASSWORD_HASH){status.textContent='Senha incorreta.';return}
   sessionStorage.setItem('gh_user',email);
   show('step-success');
-  setTimeout(()=>{window.location.href='index.html'},800);
+  setTimeout(()=>{window.location.href='/goya-hono-loyalty/index.html'},800);
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter')handleLogin()});
 </script>
